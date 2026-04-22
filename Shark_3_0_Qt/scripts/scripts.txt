@@ -1,0 +1,7 @@
+./scripts/build_linux.sh
+./scripts/build_macos.sh
+./scripts/package_all.sh
+
+
+❯ sudo lsof -i :50000
+❯ kill -9 401691
