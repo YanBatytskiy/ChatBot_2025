@@ -300,36 +300,37 @@ bool ClientSession::findServerAddress(ServerConnectionConfig &serverConnectionCo
         return true;
       }
 
-      // ищем в интернете
-      // ищем в интернете
-      addrinfo hints{}, *res = nullptr;
-      hints.ai_family = AF_INET;
-      hints.ai_socktype = SOCK_STREAM;
+      if (!serverConnectionConfig.addressInternet.empty()) {
+        // ищем в интернете
+        addrinfo hints{}, *res = nullptr;
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_STREAM;
 
-      int gaiResult = getaddrinfo(serverConnectionConfig.addressInternet.c_str(), nullptr, &hints, &res);
-      if (gaiResult != 0 || res == nullptr) {
-        addr.sin_addr.s_addr = INADDR_NONE;
-      } else {
-        sockaddr_in *ipv4 = (sockaddr_in *)res->ai_addr;
-        addr.sin_addr = ipv4->sin_addr;
-        freeaddrinfo(res);
-      }
+        int gaiResult = getaddrinfo(serverConnectionConfig.addressInternet.c_str(), nullptr, &hints, &res);
+        if (gaiResult != 0 || res == nullptr) {
+          addr.sin_addr.s_addr = INADDR_NONE;
+        } else {
+          sockaddr_in *ipv4 = (sockaddr_in *)res->ai_addr;
+          addr.sin_addr = ipv4->sin_addr;
+          freeaddrinfo(res);
+        }
 
-      addr.sin_family = AF_INET;
-      addr.sin_port = htons(serverConnectionConfig.port);
+        addr.sin_family = AF_INET;
+        addr.sin_port = htons(serverConnectionConfig.port);
 
-      result = connect(socketTmp, (sockaddr *)&addr, sizeof(addr));
-      if (result == 0) {
-        std::cout << "Сервер найден. " << serverConnectionConfig.addressInternet << ":" << serverConnectionConfig.port
-                  << std::endl;
-        serverConnectionConfig.found = true;
-        serverConnectionMode = ServerConnectionMode::Internet;
+        result = connect(socketTmp, (sockaddr *)&addr, sizeof(addr));
+        if (result == 0) {
+          std::cout << "Сервер найден. " << serverConnectionConfig.addressInternet << ":"
+                    << serverConnectionConfig.port << std::endl;
+          serverConnectionConfig.found = true;
+          serverConnectionMode = ServerConnectionMode::Internet;
 #ifdef _WIN32
-        closesocket(socketTmp);
+          closesocket(socketTmp);
 #else
-        close(socketTmp);
+          close(socketTmp);
 #endif
-        return true;
+          return true;
+        }
       }
     }
   } // try
@@ -381,6 +382,9 @@ int ClientSession::createConnection(ServerConnectionConfig &serverConnectionConf
     break;
   }
   case ServerConnectionMode::Internet: {
+    if (serverConnectionConfig.addressInternet.empty())
+      return -1;
+
     serveraddress.sin_addr.s_addr = inet_addr(serverConnectionConfig.addressInternet.c_str());
     break;
   }

@@ -9,7 +9,7 @@
 #include <memory>
 
 bool CreateAndSendNewMessage(ClientSession &clientSession, std::shared_ptr<Chat> &chat_ptr) {
-  bool result;
+  bool result = false;
 
   while (true) {
     try {

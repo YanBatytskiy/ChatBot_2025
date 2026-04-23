@@ -12,7 +12,7 @@
 struct ServerConnectionConfig {
   std::string addressLocalHost = "127.0.0.1";
   std::string addressLocalNetwork = "";
-  std::string addressInternet = "https://yan2201moscowoct.ddns.net";
+  std::string addressInternet = "";
   std::uint16_t port = 50000;
   bool found = false;
 };

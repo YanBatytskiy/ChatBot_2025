@@ -87,7 +87,7 @@ void Chat::updateMessageIdToTimeStamp(const std::size_t &oldMessageId, const std
 //
 //
 //
-const std::int64_t Chat::getTimeStampForLastMessage(const std::size_t &messageId) const {
+std::int64_t Chat::getTimeStampForLastMessage(const std::size_t &messageId) const {
   return _messageIdToTimeStamp.find(messageId)->second;
 }
 

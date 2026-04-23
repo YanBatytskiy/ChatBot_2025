@@ -67,7 +67,7 @@ public:
 
   const std::unordered_map<std::size_t, int64_t> &getMessageIdToTimeStamp() const;
 
-  const std::int64_t getTimeStampForLastMessage(const std::size_t &messageId) const;
+  std::int64_t getTimeStampForLastMessage(const std::size_t &messageId) const;
 
   const std::multimap<int64_t, std::shared_ptr<Message>> &getMessages() const;
   std::multimap<int64_t, std::shared_ptr<Message>> &getMessages();
