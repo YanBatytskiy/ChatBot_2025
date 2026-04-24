@@ -1,0 +1,10 @@
+{
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "dbname": "chatbot_portfolio_db",
+    "user": "chatbot_app",
+    "password": "chatbot_local_dev",
+    "sslmode": "disable"
+  }
+}

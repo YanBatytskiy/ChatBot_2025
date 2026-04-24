@@ -1,0 +1,51 @@
+version: '3'
+
+vars:
+  CLANG_FORMAT: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-format
+
+tasks:
+  build:macos:
+    desc: Configure and build the macOS target
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - bash scripts/build_macos.sh
+
+  build:client:
+    desc: Configure and build the local src/client model
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - cmake -S src/client -B build_client_local -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - cmake --build build_client_local --parallel
+
+  build:server:
+    desc: Configure and build the local src/server model
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - cmake -S src/server -B build_server_local -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+      - cmake --build build_server_local --parallel
+
+  format:
+    desc: Format src/ with clang-format
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - find src -type f \( -name '*.cpp' -o -name '*.h' \) ! -name 'picosha2.h' -print0 | xargs -0 {{.CLANG_FORMAT}} -i
+
+  format:check:
+    desc: Check src/ formatting with clang-format
+    dir: '{{.TASKFILE_DIR}}'
+    cmds:
+      - find src -type f \( -name '*.cpp' -o -name '*.h' \) ! -name 'picosha2.h' -print0 | xargs -0 {{.CLANG_FORMAT}} --dry-run --Werror
+
+  run:server:
+    desc: Run the server from build_macos
+    dir: '{{.TASKFILE_DIR}}'
+    deps: [build:macos]
+    cmds:
+      - ./build_macos/server
+
+  run:client:
+    desc: Run the client from build_macos
+    dir: '{{.TASKFILE_DIR}}'
+    deps: [build:macos]
+    cmds:
+      - ./build_macos/client

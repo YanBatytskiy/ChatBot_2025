@@ -1,0 +1,33 @@
+name: ${COMPOSE_PROJECT_NAME:-shark_3_0_postgres}
+
+services:
+  db:
+    image: postgres:${POSTGRES_VERSION:-16-alpine}
+    container_name: ${CONTAINER_NAME:-shark_3_0_postgres_db}
+    restart: unless-stopped
+    user: "${CONTAINER_USER:-0:0}"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-chatbot_portfolio_db}
+      POSTGRES_USER: ${POSTGRES_USER:-chatbot_app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-chatbot_local_dev}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:-}
+      PGDATA: /var/lib/postgresql/${PGDATA_SUBDIR:-pgdata}
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    command: >
+      postgres
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chatbot_app} -d ${POSTGRES_DB:-chatbot_portfolio_db} -h localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - ${PGDATA_BIND:-postgres_data}:/var/lib/postgresql
+
+volumes:
+  postgres_data:
+    name: ${PGDATA_VOLUME:-shark_3_0_postgres_pgdata}

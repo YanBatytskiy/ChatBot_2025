@@ -1,0 +1,15 @@
+# Local PostgreSQL
+cp ./config/.env.local-docker.example ./config/.env.local-docker
+cp ./config/connect_db.local-docker.example ./config/connect_db.conf
+docker compose -f ./config/docker-compose.yml --env-file ./config/.env.local-docker up -d db
+docker compose -f ./config/docker-compose.yml --env-file ./config/.env.local-docker down
+
+# macOS
+./scripts/build_macos.sh
+./build_macos/server
+./build_macos/Shark_UI/Shark_ui
+
+# Linux
+./scripts/build_linux.sh
+./dist/linux/server/run_server.sh
+./dist/linux/client/run_client.sh

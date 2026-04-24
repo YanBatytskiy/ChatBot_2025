@@ -1,0 +1,103 @@
+version: '3'
+
+vars:
+  PROJECT_DIR: '{{.TASKFILE_DIR}}'
+  CONFIG_DIR: '{{.PROJECT_DIR}}/config'
+  COMPOSE_FILE: '{{.CONFIG_DIR}}/docker-compose.yml'
+  LOCAL_ENV: '{{.CONFIG_DIR}}/.env.local-docker'
+  LOCAL_ENV_EXAMPLE: '{{.CONFIG_DIR}}/.env.local-docker.example'
+  CONNECT_DB_CONF: '{{.CONFIG_DIR}}/connect_db.conf'
+  LOCAL_CONNECT_DB_EXAMPLE: '{{.CONFIG_DIR}}/connect_db.local-docker.example'
+  CLANG_FORMAT: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang-format
+
+tasks:
+  config:bootstrap:
+    desc: Create config/connect_db.conf from the local Docker template
+    dir: '{{.PROJECT_DIR}}'
+    cmds:
+      - mkdir -p "{{.CONFIG_DIR}}"
+      - cp "{{.LOCAL_CONNECT_DB_EXAMPLE}}" "{{.CONNECT_DB_CONF}}"
+
+  docker:env:
+    internal: true
+    dir: '{{.PROJECT_DIR}}'
+    cmds:
+      - mkdir -p "{{.CONFIG_DIR}}"
+      - test -f "{{.LOCAL_ENV}}" || cp "{{.LOCAL_ENV_EXAMPLE}}" "{{.LOCAL_ENV}}"
+
+  docker:port-check:
+    internal: true
+    dir: '{{.PROJECT_DIR}}'
+    deps: [docker:env]
+    cmds:
+      - >
+        . "{{.LOCAL_ENV}}";
+        port="${POSTGRES_PORT:-5432}";
+        python3 -c 'import socket, sys; port=int(sys.argv[1]); probe=socket.socket(socket.AF_INET, socket.SOCK_STREAM); probe.settimeout(0.2); busy=(probe.connect_ex(("127.0.0.1", port))==0); probe.close(); print(f"Port {port} is already in use on the host. Stop the local PostgreSQL service or free the port before running docker:up.", file=sys.stderr) if busy else None; sys.exit(1 if busy else 0)' "$port"
+
+  docker:up:
+    desc: Start local PostgreSQL via docker compose
+    dir: '{{.PROJECT_DIR}}'
+    deps: [docker:port-check]
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" --env-file "{{.LOCAL_ENV}}" up -d db
+
+  docker:down:
+    desc: Stop local PostgreSQL via docker compose
+    dir: '{{.PROJECT_DIR}}'
+    deps: [docker:env]
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" --env-file "{{.LOCAL_ENV}}" down
+
+  docker:delete:
+    desc: Delete local PostgreSQL container, network, and volume data
+    dir: '{{.PROJECT_DIR}}'
+    deps: [docker:env]
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" --env-file "{{.LOCAL_ENV}}" down -v --remove-orphans
+
+  docker:logs:
+    desc: Tail local PostgreSQL logs
+    dir: '{{.PROJECT_DIR}}'
+    deps: [docker:env]
+    cmds:
+      - docker compose -f "{{.COMPOSE_FILE}}" --env-file "{{.LOCAL_ENV}}" logs -f db
+
+  build:macos:
+    desc: Configure and build the macOS target
+    dir: '{{.PROJECT_DIR}}'
+    cmds:
+      - bash scripts/build_macos.sh
+
+  format:
+    desc: Format src/ and Shark_UI/ with clang-format
+    dir: '{{.PROJECT_DIR}}'
+    cmds:
+      - find src Shark_UI -type f \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 {{.CLANG_FORMAT}} -i
+
+  format:check:
+    desc: Check src/ and Shark_UI/ formatting with clang-format
+    dir: '{{.PROJECT_DIR}}'
+    cmds:
+      - find src Shark_UI -type f \( -name '*.cpp' -o -name '*.h' \) -print0 | xargs -0 {{.CLANG_FORMAT}} --dry-run --Werror
+
+  run:server:
+    desc: Run the server from build_macos
+    dir: '{{.PROJECT_DIR}}'
+    deps: [build:macos]
+    cmds:
+      - ./build_macos/server
+
+  run:ui:
+    desc: Run the Qt client from build_macos
+    dir: '{{.PROJECT_DIR}}'
+    deps: [build:macos]
+    cmds:
+      - ./build_macos/Shark_UI/Shark_ui
+
+  run:client:
+    desc: Run the Qt client from build_macos (alias for run:ui)
+    dir: '{{.PROJECT_DIR}}'
+    deps: [build:macos]
+    cmds:
+      - ./build_macos/Shark_UI/Shark_ui
